@@ -1,5 +1,10 @@
 package com.example.tablero_kanban;
 
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
@@ -51,7 +56,9 @@ public class Listado extends VerticalLayout{
             Div nuevaTarea = crearTarjeta(titulo, descripcion, prioridadString);
             contenedorTarjetas.add(nuevaTarea);
             tarjetasPendiente.add(nuevaTarea);
-
+            ordenarColumna(tarjetasPendiente);
+            ordenarColumna(tarjetasEnProceso);
+            ordenarColumna(tarjetasFinalizadas);
             tituloField.clear();
             descripArea.clear();
             prioridad.setValue("Media");
@@ -68,6 +75,7 @@ public class Listado extends VerticalLayout{
         card.getStyle().set("width", "100%");
         card.getStyle().set("cursor", "pointer");
         card.getStyle().set("border", "2px solid transparent");
+        card.getElement().setAttribute("data-prioridad", prioridadString.trim());
          
         H4 tituloCard = new H4(titulo);
         tituloCard.getStyle().set("margin", "0 0 8px 0");
@@ -127,12 +135,36 @@ public class Listado extends VerticalLayout{
                 contenedorPasar.add(tarjetaSeleccionada);
                 tarjetaSeleccionada.getStyle().set("border", "2px solid transparent");
                 tarjetaSeleccionada = null; 
-                
+                ordenarColumna(contenedorPasar);
             }
         });
         moverAbtn.setWidthFull();
         moverAbtn.getStyle().set("margin-bottom", "10px");
         return moverAbtn;
         
+    }
+
+    public void ordenarColumna(VerticalLayout columna){
+        List<Component> tarjetas = columna.getChildren().collect(Collectors.toList());
+        tarjetas.sort((t1, t2) ->{
+            String p1 = t1.getElement().getAttribute("data-prioridad");
+            String p2 = t2.getElement().getAttribute("data-prioridad");
+            return Integer.compare(nivelP(p1), nivelP(p2));
+        });
+        columna.removeAll();
+        tarjetas.forEach(columna::add);
+    }
+    public int nivelP (String prioridad){
+        if (prioridad ==null) {
+            return 2;
+        }else if (prioridad.equalsIgnoreCase("Alta")) {
+            return 1;
+        }else if (prioridad.equalsIgnoreCase("Media")) {
+            return 2;
+        }else if (prioridad.equalsIgnoreCase("Baja")) {
+            return 3;
+        }else{
+            return 2;
+        }
     }
 }
