@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
@@ -21,10 +22,14 @@ public class Listado extends VerticalLayout{
     public VerticalLayout tarjetasEnProceso;
     public VerticalLayout tarjetasFinalizadas;
     public Div tarjetaSeleccionada;
+    public Select<String> prioridad = new Select<>(); 
     public Listado (){
     
     tituloField = new TextField("Titulo de la tarea");
     descripArea = new TextArea("Descripcion");
+    prioridad.setLabel("Prioridad");
+    prioridad.setItems("Baja", "Media", "Alta");
+    prioridad.setValue("Media");
     contenedorTarjetas = new HorizontalLayout();
     contenedorTarjetas.setPadding(false);
     VerticalLayout columna1 = crearColumna("Pendiente", tarjetasPendiente = new VerticalLayout());
@@ -36,24 +41,34 @@ public class Listado extends VerticalLayout{
     Button crearCard = new Button("Añadir Tarjeta", e -> nuevaTarjeta());
     setAlignItems(Alignment.CENTER);
 
-        add(tableroKanban, tituloField, descripArea, contenedorTarjetas, crearCard);
+        add(tableroKanban, tituloField, descripArea, prioridad, contenedorTarjetas, crearCard);
     }
     public void nuevaTarjeta (){
         String titulo = tituloField.getValue();
         String descripcion = descripArea.getValue();
+        String prioridadString = prioridad.getValue();
         if (!titulo.trim().isEmpty()) {
-            Div nuevaTarea = crearTarjeta(titulo, descripcion);
+            Div nuevaTarea = crearTarjeta(titulo, descripcion, prioridadString);
             contenedorTarjetas.add(nuevaTarea);
             tarjetasPendiente.add(nuevaTarea);
 
             tituloField.clear();
             descripArea.clear();
+            prioridad.setValue("Media");
         }
         
     }
-    public Div crearTarjeta(String titulo, String descripcion){
+    public Div crearTarjeta(String titulo, String descripcion, String prioridadString){
         Div card = new Div();
-        // Estilos, etc 
+        card.getStyle().set("background-color", "#ffffff");
+        card.getStyle().set("border-radius", "8px");
+        card.getStyle().set("padding", "12px");
+        card.getStyle().set("box-shadow", "0 1px 3px rgba(0,0,0,0.1)");
+        card.getStyle().set("margin-bottom", "10px");
+        card.getStyle().set("width", "100%");
+        card.getStyle().set("cursor", "pointer");
+        card.getStyle().set("border", "2px solid transparent");
+         
         H4 tituloCard = new H4(titulo);
         tituloCard.getStyle().set("margin", "0 0 8px 0");
         
@@ -61,7 +76,21 @@ public class Listado extends VerticalLayout{
         descripcionCard.getStyle().set("margin", "0");
         descripcionCard.getStyle().set("Color", "#024d8a");
 
-        card.add(tituloCard,descripcionCard);
+        Paragraph prioridadCard = new Paragraph("Prioridad: " + prioridadString);
+        prioridadCard.getStyle().set("margin", "0");
+        prioridadCard.getStyle().set("font-size", "0.85rem");
+        prioridadCard.getStyle().set("font-weight", "bold");
+        
+        if (prioridadString.trim().equals("Alta")) {
+            prioridadCard.getStyle().set("color", "#d9534f");
+        } else if (prioridadString.trim().equals("Media")) {
+            prioridadCard.getStyle().set("color", "#f0ad4e");
+        } else {
+            prioridadCard.getStyle().set("color", "#5cb85c");
+        }
+
+
+        card.add(tituloCard,descripcionCard, prioridadCard);
         card.addClickListener(e ->{
             if (tarjetaSeleccionada != null) {
                 tarjetaSeleccionada.getStyle().set("border", "2px solid transparent");
