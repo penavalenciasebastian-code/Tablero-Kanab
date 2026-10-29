@@ -1,5 +1,11 @@
 package com.example.tablero_kanban;
 
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -28,6 +34,7 @@ public class Listado extends VerticalLayout{
     public VerticalLayout tarjetasFinalizadas;
     public Div tarjetaSeleccionada;
     public Select<String> prioridad = new Select<>(); 
+    public String ruta = "tablero.txt";
     public Listado (){
     
     tituloField = new TextField("Titulo de la tarea");
@@ -47,6 +54,7 @@ public class Listado extends VerticalLayout{
     setAlignItems(Alignment.CENTER);
 
         add(tableroKanban, tituloField, descripArea, prioridad, contenedorTarjetas, crearCard);
+        cargarTareas();
     }
     public void nuevaTarjeta (){
         String titulo = tituloField.getValue();
@@ -62,6 +70,8 @@ public class Listado extends VerticalLayout{
             tituloField.clear();
             descripArea.clear();
             prioridad.setValue("Media");
+
+            guardarTarea();
         }
         
     }
@@ -76,7 +86,12 @@ public class Listado extends VerticalLayout{
         card.getStyle().set("cursor", "pointer");
         card.getStyle().set("border", "2px solid transparent");
         card.getElement().setAttribute("data-prioridad", prioridadString.trim());
-         
+
+        card.getElement().setAttribute("data-titulo", titulo);
+        card.getElement().setAttribute("data-descripcion", descripcion);
+        
+        
+        
         H4 tituloCard = new H4(titulo);
         tituloCard.getStyle().set("margin", "0 0 8px 0");
         
@@ -136,6 +151,7 @@ public class Listado extends VerticalLayout{
                 tarjetaSeleccionada.getStyle().set("border", "2px solid transparent");
                 tarjetaSeleccionada = null; 
                 ordenarColumna(contenedorPasar);
+                guardarTarea();
             }
         });
         moverAbtn.setWidthFull();
@@ -152,7 +168,9 @@ public class Listado extends VerticalLayout{
             return Integer.compare(nivelP(p1), nivelP(p2));
         });
         columna.removeAll();
-        tarjetas.forEach(columna::add);
+        for (Component tarjeta : tarjetas) {
+            columna.add(tarjeta);
+        }
     }
     public int nivelP (String prioridad){
         if (prioridad ==null) {
@@ -167,4 +185,68 @@ public class Listado extends VerticalLayout{
             return 2;
         }
     }
+    public void guardarTarea() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(ruta))) {
+            escribirTarjeta(tarjetasPendiente, "Pendiente", pw);
+            escribirTarjeta(tarjetasEnProceso, "En Proceso", pw);
+            escribirTarjeta(tarjetasFinalizadas, "Finalizada", pw);
+        } catch (IOException e) {
+            // cambiar esto
+
+            e.printStackTrace();
+        }
+    }
+    private void escribirTarjeta(VerticalLayout columna, String nombreColumna, PrintWriter pw) {
+    for (Component component : columna.getChildren().collect(Collectors.toList())) {
+        String titulo = component.getElement().getAttribute("data-titulo");
+        String descripcion = component.getElement().getAttribute("data-descripcion");
+        String prioridad = component.getElement().getAttribute("data-prioridad");
+        
+        pw.println(titulo + "|" + descripcion + "|" + prioridad + "|" + nombreColumna);
+    }
+}
+
+    public  void cargarTareas() {
+        File archivo = new File(ruta);
+        if (!archivo.exists()) {
+            return; 
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] separar = linea.split("\\|"); 
+                if (separar.length == 4) {
+                    String titulo = separar[0];
+                    String descripcion = separar[1];
+                    String prioridad = separar[2];
+                    String nombreColumna = separar[3];
+
+                    Div tarjeta = crearTarjeta(titulo, descripcion, prioridad);
+                    
+                    if (nombreColumna.equals("Pendiente")) {
+                        tarjetasPendiente.add(tarjeta);
+                    } else if (nombreColumna.equals("En Proceso")) {
+                        tarjetasEnProceso.add(tarjeta);
+                    } else if (nombreColumna.equals("Finalizada")) {
+                        tarjetasFinalizadas.add(tarjeta);
+                    }
+                }
+            }
+            ordenarColumna(tarjetasPendiente);
+            ordenarColumna(tarjetasEnProceso);
+            ordenarColumna(tarjetasFinalizadas);
+            
+        } catch (IOException e) {
+            // cambiar esto
+
+
+
+
+
+
+            e.printStackTrace();
+        } 
+    } 
+
 }
